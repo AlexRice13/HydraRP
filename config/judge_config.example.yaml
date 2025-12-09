@@ -1,0 +1,13 @@
+# Example judge configuration file
+# Copy this to judge_config.yaml and fill in your actual credentials
+# Note: judge_config.yaml is gitignored to prevent credential leaks
+
+# OpenAI-compatible API endpoint
+# Trailing /chat/completions will be automatically stripped
+endpoint: "https://api.openai.com/v1"
+
+# Your API key
+api_key: "sk-your-api-key-here"
+
+# Model name for judging
+model: "gpt-4"
