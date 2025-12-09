@@ -6,11 +6,8 @@ Provides order-preserving async reward calculation with LLM-based judging.
 import asyncio
 import re
 from typing import List, Dict, Any, Optional
-import numpy as np
 
-from training.judge_client import get_judge_client
 from training.config_loader import load_judge_config, load_prompt_config, load_reward_config, get_prompt
-from reward_logger import get_reward_logger
 
 
 async def call_judge_llm(
@@ -19,6 +16,7 @@ async def call_judge_llm(
     reference: str,
     prompt_template: str,
     model: str,
+    client,
     temperature: float = 0.0,
     max_tokens: int = 10,
     timeout: float = 30.0
@@ -31,6 +29,7 @@ async def call_judge_llm(
         reference: Reference/gold answer
         prompt_template: Prompt template with {query}, {response}, {reference} placeholders
         model: Model name to use for judging
+        client: AsyncOpenAI client instance
         temperature: Sampling temperature
         max_tokens: Maximum tokens to generate
         timeout: Request timeout in seconds
@@ -45,9 +44,6 @@ async def call_judge_llm(
             response=response,
             reference=reference
         )
-        
-        # Get async client
-        client = get_judge_client()
         
         # Make async API call
         completion = await asyncio.wait_for(
@@ -224,23 +220,33 @@ async def legal_reward_fn_async(
     judge_scores = []
     
     if judge_config and prompt_template:
-        # Create tasks for all judge calls - asyncio.gather preserves order
-        judge_tasks = [
-            call_judge_llm(
-                query=queries[i],
-                response=responses[i],
-                reference=references[i],
-                prompt_template=prompt_template,
-                model=model,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                timeout=timeout
-            )
-            for i in range(len(queries))
-        ]
-        
-        # Execute all tasks in parallel, preserving order
-        judge_scores = await asyncio.gather(*judge_tasks)
+        try:
+            # Get judge client (may raise if config invalid)
+            from training.judge_client import get_judge_client
+            client = get_judge_client()
+            
+            # Create tasks for all judge calls - asyncio.gather preserves order
+            judge_tasks = [
+                call_judge_llm(
+                    query=queries[i],
+                    response=responses[i],
+                    reference=references[i],
+                    prompt_template=prompt_template,
+                    model=model,
+                    client=client,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    timeout=timeout
+                )
+                for i in range(len(queries))
+            ]
+            
+            # Execute all tasks in parallel, preserving order
+            judge_scores = await asyncio.gather(*judge_tasks)
+        except (ValueError, Exception) as e:
+            # Judge client initialization failed, use default scores
+            print(f"Warning: Judge client unavailable ({e}), using default scores")
+            judge_scores = [5.0] * len(queries)
     else:
         # No judge available, use default scores
         judge_scores = [5.0] * len(queries)
@@ -290,6 +296,12 @@ async def legal_reward_fn_async(
     
     # Log rewards if enabled
     if log_rewards:
+        # Import at function level to avoid circular imports and maintain consistency
+        import sys
+        from pathlib import Path
+        sys.path.insert(0, str(Path(__file__).parent.parent))
+        from reward_logger import get_reward_logger
+        
         logger = get_reward_logger(enabled=True)
         logger.log_batch(
             queries=queries,
@@ -327,15 +339,19 @@ def legal_reward_fn(
     """
     try:
         # Try to get current event loop
-        loop = asyncio.get_running_loop()
-        # If we're already in an async context, we can't use asyncio.run
-        # In this case, the caller should use legal_reward_fn_async directly
+        asyncio.get_running_loop()
+        # If we get here, we're in an async context
+        # Caller should use legal_reward_fn_async directly
         raise RuntimeError(
             "legal_reward_fn called from within an async context. "
             "Use legal_reward_fn_async directly instead."
         )
-    except RuntimeError:
-        # No running loop, we can use asyncio.run
+    except RuntimeError as e:
+        # Check if this is our own error or the "no running loop" error
+        if "legal_reward_fn called from within" in str(e):
+            # Re-raise our own error
+            raise
+        # Otherwise, no running loop, we can use asyncio.run
         return asyncio.run(
             legal_reward_fn_async(
                 queries=queries,
