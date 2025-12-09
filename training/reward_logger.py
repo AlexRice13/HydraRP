@@ -55,7 +55,7 @@ class RewardLogger:
             'metadata'
         ]
         
-        with open(self.current_log_file, 'w', newline='', encoding='utf-8') as f:
+        with self.current_log_file.open('w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
             writer.writerow(headers)
     
@@ -101,7 +101,7 @@ class RewardLogger:
             str(metadata) if metadata else ''
         ]
         
-        with open(self.current_log_file, 'a', newline='', encoding='utf-8') as f:
+        with self.current_log_file.open('a', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
             writer.writerow(row)
     

@@ -59,7 +59,7 @@ def load_yaml_config(filepath: Path, required: bool = False) -> Dict[str, Any]:
             )
         return {}
     
-    with open(filepath, 'r', encoding='utf-8') as f:
+    with filepath.open('r', encoding='utf-8') as f:
         config = yaml.safe_load(f)
         return config if config is not None else {}
 

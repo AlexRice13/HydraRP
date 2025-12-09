@@ -27,6 +27,9 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# Editable install artifacts
+hydrarp.egg-info/
+
 # PyInstaller
 *.manifest
 *.spec
