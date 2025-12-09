@@ -60,7 +60,12 @@ Adjust these values based on your training objectives.
 ### Running the Example
 
 ```bash
-python training/example_usage.py
+# Run as a module (recommended)
+python -m training.example_usage
+
+# Or install the package and run
+pip install -e .
+python -m training.example_usage
 ```
 
 This script demonstrates:
@@ -136,7 +141,7 @@ The log directory and CSV files are gitignored.
 1. **`training/config_loader.py`**: YAML configuration loading with defaults and overrides
 2. **`training/judge_client.py`**: Async OpenAI client singleton with retry logic
 3. **`training/reward_functions.py`**: Async reward calculation with order preservation
-4. **`reward_logger.py`**: CSV-based logging for reward tracking
+4. **`training/reward_logger.py`**: CSV-based logging for reward tracking
 5. **`training/example_usage.py`**: Example usage and integration test
 
 ### Async Design
@@ -161,7 +166,7 @@ python training/example_usage.py
 
 ```bash
 # Run example with mock data (no API calls if credentials missing)
-python training/example_usage.py
+python -m training.example_usage
 ```
 
 ### Project Structure
@@ -177,8 +182,8 @@ HydraRP/
 │   ├── config_loader.py             # YAML configuration loading
 │   ├── judge_client.py              # Async OpenAI client singleton
 │   ├── reward_functions.py          # Async reward calculation
+│   ├── reward_logger.py             # CSV logging utility
 │   └── example_usage.py             # Example usage script
-├── reward_logger.py                  # CSV logging utility
 ├── requirements.txt                  # Python dependencies
 ├── setup.py                          # Package setup
 ├── LICENSE                           # MIT License

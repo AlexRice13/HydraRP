@@ -7,12 +7,6 @@ Demonstrates:
 - Order preservation in batch processing
 """
 
-import sys
-from pathlib import Path
-
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from training.reward_functions import legal_reward_fn
 from training.config_loader import load_judge_config, load_prompt_config, load_reward_config
 

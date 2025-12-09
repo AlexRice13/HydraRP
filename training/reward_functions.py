@@ -8,6 +8,7 @@ import re
 from typing import List, Dict, Any, Optional
 
 from training.config_loader import load_judge_config, load_prompt_config, load_reward_config, get_prompt
+from training.reward_logger import get_reward_logger
 
 
 async def call_judge_llm(
@@ -296,12 +297,6 @@ async def legal_reward_fn_async(
     
     # Log rewards if enabled
     if log_rewards:
-        # Import at function level to avoid circular imports and maintain consistency
-        import sys
-        from pathlib import Path
-        sys.path.insert(0, str(Path(__file__).parent.parent))
-        from reward_logger import get_reward_logger
-        
         logger = get_reward_logger(enabled=True)
         logger.log_batch(
             queries=queries,
